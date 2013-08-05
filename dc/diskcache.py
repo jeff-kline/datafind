@@ -6,6 +6,8 @@ from re import compile, match, search
 from stat import ST_MTIME
 from time import sleep
 
+import mimetypes
+import gzip
 import os
 
 # the known ascii dump versions
@@ -284,7 +286,12 @@ class DiskCacheFile(DiskCacheBase):
 
         # inspect the first line of diskcache file to set the file
         # version
-        with open(self.diskcache_file) as fh: l = fh.next()
+        ftype = mimetypes.guess_type(self.diskcache_file)
+        self.open = open
+        if "gzip" in ftype: self.open = gzip.open
+
+        with self.open(self.diskcache_file) as fh: l = fh.next()
+
         if VERSION_MULTI_STR in l: version = VERSION_MULTI
         else: version = VERSION_SINGLE
 
@@ -305,7 +312,7 @@ class DiskCacheFile(DiskCacheBase):
     def force_refresh(self, *args, **kwargs):
         '''reread the diskcache file'''
         self.rtime = self.mtime()
-        with open(self.diskcache_file, 'r') as fh:
+        with self.open(self.diskcache_file, 'r') as fh:
             # initialize the *list*, not the base class
             super(DiskCacheBase, self).__init__(self.load(fh, *args, **kwargs))
         
