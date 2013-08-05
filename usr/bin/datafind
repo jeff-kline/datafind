@@ -1,2 +1,35 @@
 #!/usr/bin/python
 # -*- Python -*-
+
+from optparse import OptionParser
+from diskcache import *
+
+CMD_LIST=["expand"]
+
+usage = "usage: %prog FILE_LIST [options]"
+description = "Find data using diskcache"
+version = "%prog 0.1"
+
+parser = OptionParser(usage, version=version, description=description)
+
+parser.add_option("-m", "--gps-min", help="[default: None] include "
+                  "only frames that include this second",
+                  default=None)
+
+parser.add_option("-M", "--gps-max", help="[default: None] include "
+                  "only frames that include this second",
+                  default=None)
+
+parser.add_option("-r", "--regexp", help="[default: ''] include "
+                  "only lines from files in FILE_LIST matching regular "
+                  "expression", default='')
+
+parser.add_option("-c", "--command", choices=CMD_LIST,
+                  help="[default: expand] ",
+                  default="expand")
+
+(opts, args) = parser.parse_args()
+
+for f in args:
+    dc = DiskCacheFile(f, minimum_gps=opts.gps_min,
+                       maximum_gps=opts.gps_max, regexp=opts.regexp)

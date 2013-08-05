@@ -1,4 +1,4 @@
-TESTS=testdiskcache.py
+TESTS=testdiskcache.py testdiskcache_script.py
 
 export PYTHONPATH=../dc
 
