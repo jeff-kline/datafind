@@ -33,3 +33,5 @@ parser.add_option("-c", "--command", choices=CMD_LIST,
 for f in args:
     dc = DiskCacheFile(f, minimum_gps=opts.gps_min,
                        maximum_gps=opts.gps_max, regexp=opts.regexp)
+    if opts.command == "expand":
+        dc.expand()

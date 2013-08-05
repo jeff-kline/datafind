@@ -13,11 +13,23 @@ VERSION_SINGLE = 0x00ff
 VERSION_MULTI = 0x0101
 # we want the preceding 0's for the magic string (hex strips them)
 VERSION_SINGLE_STR = "0x00ff"
-VERSION_MULTI_STR = "0x0101"
+VERSION_MULTI_STR = "0x0101"        
+
+def diskcache_expand(d):
+    """return  list of strings described by d, where 
+        d is dict with keys
+    {"directory", "frame_type", "site", "dur", "ext", "segmentlist"}
+    """
+    for dc_seg in d["segmentlist"]:
+        for gps in range(dc_seg[0], dc_seg[1], d['dur']):
+            lfn = '-'.join(
+                [d["site"], d["frame_type"], str(gps), str(d["dur"])]
+            ) + d["ext"]
+            yield '/'.join([d["directory"], lfn])
 
 class DiskCacheBase(list):
     '''DiskCache is a list of dictionaries with a key constraint:
-    ('directory', 'frame-type', 'site', 'dur', 'ext')
+    ('directory', 'frame_type', 'site', 'dur', 'ext')
 
     It is populated using information in the diskcache_file and
     optionally filter_list and regexp. Regexp may be a string or a
@@ -151,6 +163,16 @@ class DiskCacheBase(list):
 
         return ret
 
+    def expand(self):
+        """return iterator that yields a string contained in self.
+
+        full list of iterator is the expanded list of all files
+        indexed by the entire diskcache
+        """
+        for entry in self:
+            for i in diskcache_expand(entry):
+                yield i
+
     def dict_keys(self):
         return self[0].keys()
 
@@ -243,6 +265,7 @@ class DiskCacheBase(list):
 
     def refresh(self, *args, **kwargs):
         raise NotImplementedError('refresh  not implemented')
+
 
 class DiskCacheFile(DiskCacheBase):
     def __init__(self, diskcache_file, sleepfun=sleep, **kwargs):
