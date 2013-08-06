@@ -4,7 +4,8 @@ datafind
 Expand, read or verify contents of a diskcache file.
 
 Recognized diskcache formats include single-extension and
-multiple-extension.
+multiple-extension.  Will automatically recognize and read
+gzip-compressed diskcache files.
 
 Examples
 ========
@@ -52,7 +53,7 @@ $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO 
 /data/node238/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
 ```
 
-Verify that the above files listed exist on disk (pass the flag `-e`):
+Verify that the files exist on disk (pass the flag `-e`):
 ```bash
 $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO -m 1000000000 -M 1000000000  -e
 True /archive/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
@@ -68,8 +69,7 @@ $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO 
 {'mod_time': 1315971491, 'frame_type': 'M', 'ext': '.gwf', 'file_count': 1, 'number1': 1, 'directory': '/data/node238/frames/trend/minute-trend/LHO/H-M-99', 'segmentlist': [segment(999997200, 1000000800)], 'dur': 3600, 'site': 'H'}
 ```
 
-Verify that list of files described in diskcache match list of files
-on disk (pass the command `-c verify`). First, failure:
+Verify that list of files described in diskcache match all matching files in directory (pass the command `-c verify`). Useful to see whether files are indexable.  First, failure:
 ```bash
 $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO -m 1000000000 -M 1000000000 -c verify
 Traceback (most recent call last):
@@ -82,11 +82,13 @@ Traceback (most recent call last):
 OSError: [Errno 2] No such file or directory: '/data/node238/frames/trend/minute-trend/LHO/H-M-99'
 $ 
 ```
-And now some success (regular expression filters out the `/data/.*` namespace):
+Now, success (regular expression filters out the `/data/.*` namespace):
 ```
 $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r '/archive/.*trend/LHO' -m 1000000000 -M 1000000000 -c verify
 $ 
 ```
+
+
 
 
 
