@@ -419,7 +419,7 @@ if __name__ == "__main__":
                       default="expand", choices=CMD_LIST)
     
     parser.add_option("-s", "--stat", help="Stat all files in diskcache. Only "
-                      "sensible when used with '-c expand' or '-c verify'.",
+                      "sensible when used with '-c expand'.",
                       default=False, action="store_true")
 
     parser.add_option("--no-update-file-count", 
