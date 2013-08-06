@@ -1,7 +1,7 @@
 datafind
 ========
 
-Expand, read or verify contents of a diskcache file.
+Expand, read or verify contents of a list of diskcache files.
 
 Recognized diskcache formats include single-extension and
 multiple-extension.  Will automatically recognize and read
