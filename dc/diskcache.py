@@ -439,7 +439,9 @@ if __name__ == "__main__":
                            prune=bool(not opts.no_prune), 
                            update_file_count=bool(not opts.no_update_file_count))
         if opts.command == "expand":
-            for f in dc.expand():
+            for i, f in enumerate(dc.expand()):
+                if i > TOO_MANY_FILES:
+                    raise RuntimeError("Too many files to expand")
                 if opts.stat: print exists(f), f
                 else: print f
         elif opts.command == "verify":
