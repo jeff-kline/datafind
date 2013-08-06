@@ -82,7 +82,7 @@ Traceback (most recent call last):
 OSError: [Errno 2] No such file or directory: '/data/node238/frames/trend/minute-trend/LHO/H-M-99'
 $ 
 ```
-And now some success:
+And now some success (regular expression filters out the `/data/.*` namespace):
 ```
 $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r '/archive/.*trend/LHO' -m 1000000000 -M 1000000000 -c verify
 $ 
