@@ -1,6 +1,7 @@
+#!/usr/bin/python
 from glue.segments import *
 from glue.segmentsUtils import segmentlist_range
-from os.path import split
+from os.path import split, exists, join
 from time import time
 from re import compile, match, search
 from stat import ST_MTIME
@@ -16,6 +17,8 @@ VERSION_MULTI = 0x0101
 # we want the preceding 0's for the magic string (hex strips them)
 VERSION_SINGLE_STR = "0x00ff"
 VERSION_MULTI_STR = "0x0101"        
+
+TOO_MANY_FILES = 1e6
 
 def diskcache_expand(d):
     """return  list of strings described by d, where 
@@ -67,7 +70,9 @@ class DiskCacheBase(list):
         self.filter_list = filter_list
         self.regexp = compile(regexp)
         self.minimum_gps = minimum_gps
-        self.maximum_gps = maximum_gps
+        # Please do not alter maximum_gps to behave like
+        # maximum_gps+1. See comments below.
+        self.maximum_gps = maximum_gps 
 
         # 'read' time: (approximate) mtime of file when file last read
         # setting this should precede actual reading of the file; use
@@ -122,7 +127,7 @@ class DiskCacheBase(list):
         return line from diskcache converted to a dictionary
         '''
         header, mod_time, file_count, segment_bdry = line.strip().split(' ', 3)
-        directory, site, frame_type, ext, frame_count, duration = header.split(',')
+        directory, site, frame_type, ext, number1, duration = header.split(',')
 
         tmp = [int(s) for s in segment_bdry[1:-1].split()]
         segment_bdry = zip(tmp[:-1:2], tmp[1::2])
@@ -131,7 +136,7 @@ class DiskCacheBase(list):
             "directory": directory,
             "site": site,
             "frame_type": frame_type,
-            "frame_count": int(frame_count),
+            "number1": int(number1),
             "dur": int(duration),
             "mod_time": int(mod_time),
             "file_count": int(file_count),
@@ -146,7 +151,7 @@ class DiskCacheBase(list):
         return line from diskcache converted to a dictionary
         '''
         header, mod_time, file_count, segment_bdry = line.strip().split(' ', 3)
-        directory, site, frame_type, frame_count, duration = header.split(',')
+        directory, site, frame_type, number1, duration = header.split(',')
 
         tmp = [int(s) for s in segment_bdry[1:-1].split()]
         segment_bdry = zip(tmp[:-1:2], tmp[1::2])
@@ -155,7 +160,7 @@ class DiskCacheBase(list):
             "directory": directory,
             "site": site,
             "frame_type": frame_type,
-            "frame_count": int(frame_count),
+            "number1": int(number1),
             "dur": int(duration),
             "mod_time": int(mod_time),
             "file_count": int(file_count),
@@ -242,6 +247,18 @@ class DiskCacheBase(list):
                     # segment, but smaller than the next segment
                     d['segmentlist'] &= segmentlist([segment(s_0, PosInfinity)])
 
+        # Please do not alter maximum_gps to behave like max_gps+1.
+        # 
+        # When specifying gps-min and gps-max, a user is identifying a
+        # set of frames and not a time window. It is possible, quite
+        # likely, in fact, that the available frames will not
+        # terminate at either boundary gps-min or gps-max.  Rather
+        # than suggest through the API that one is including frames
+        # with times between the points (gps-min, gps-max), it is more
+        # natural to specify "seconds of interest", i.e. frames
+        # intersecting (gps-min, gps-min+1) and (gps-max, gps-max+1).
+        # Any frame that intersects these seconds of interest will be
+        # included.  
         if self.maximum_gps is not None:
             e_0 = self.maximum_gps
             for d in ret:
@@ -251,7 +268,7 @@ class DiskCacheBase(list):
                     # if e_0 is starting point of segment, we're done!
                     if e_0 == dc_seg[0]:
                         d['segmentlist'] &= segmentlist([segment([NegInfinity, e_0])])
-                        break
+                        continue
 
                     sl_range_args = (dc_seg[0], dc_seg[1], d['dur'])
                     for seg in list(segmentlist_range(*sl_range_args))[::-1]:
@@ -356,3 +373,93 @@ class DiskCacheIter(DiskCacheBase):
         super(DiskCacheBase, self).__init__(self.load(self.iterator, *args, **kwargs))
 
 
+
+if __name__ == "__main__":
+    from optparse import OptionParser
+
+    CMD_LIST=["verify", "expand", "raw", "prune"]
+    
+    usage = "usage: %prog FILE_LIST [options]"
+    description = "Find data using diskcache"
+    version = "%prog 0.1"
+    
+    parser = OptionParser(usage, version=version, description=description)
+    
+    # yes, the interval is intended to be the open interval. The interior of the 
+    # intervals in question needs to be nonempty.
+
+    parser.add_option("-m", "--gps-min", help="[default: None] Smallest second "
+                      "of interest.  Frames intersecting the open interval "
+                      "(GPS_MIN,GPS_MIN+1) are included.",
+                      default=None, type="int")
+    # NOTE: gps-max really is supposed to be inclusive of the second
+    # described by [gps-max, gps-max+1).  If you are tempted to change
+    # the behavior to [gps-min, gps-max-1), see the above comment.
+    parser.add_option("-M", "--gps-max", help="[default: None] Largest second "
+                      "of interest.  Frames intersecting the open interval "
+                      "(GPS_MAX,GPS_MAX+1) are included. ",
+                      default=None, type="int")
+    
+    parser.add_option("-r", "--regexp", help="[default: ''] include "
+                      "only lines from files in FILE_LIST matching regular "
+                      "expression.", default='')
+    
+    parser.add_option("-c", "--command", help="[default: expand] valid "
+                      "values are %s." % ", ".join(CMD_LIST), 
+                      default="expand", choices=CMD_LIST)
+    
+    parser.add_option("-s", "--stat", help="Stat all files in diskcache. Only "
+                      "sensible when used with '-c expand' or '-c verify'.",
+                      default=False, action="store_true")
+
+    parser.add_option("-n", "--no-update-filecount", help="do not update the file_count "
+                      "field of the diskcache. Only sensible when used with "
+                      "'-c raw' or '-c prune'.",
+                      default=False, action="store_true")
+
+    (opts, args) = parser.parse_args()
+    
+    for f in args:
+        dc = DiskCacheFile(f, minimum_gps=opts.gps_min,
+                           maximum_gps=opts.gps_max, regexp=opts.regexp)
+        if opts.command == "expand":
+            for f in dc.expand():
+                if opts.stat: print exists(f), f
+                else: print f
+        elif opts.command == "verify":
+            """
+            list directories of interest, check that each entry in list of
+            directories lives in the set identified by the diskcache
+            """
+            for i,f in enumerate(dc.expand()):
+                if i > TOO_MANY_FILES:
+                    raise RuntimeError("Too many files to verify")
+            
+            s0 = set(list(dc.expand()))
+
+            # list all directories of interest
+            s1=set()
+            for d in dc:
+                if d["segmentlist"]:
+                    s1.update(set(join(d["directory"],l) 
+                                  for l in os.listdir(d["directory"]) 
+                                  if join(d["directory"], l) in dc))
+
+            # FIXME
+            # offer useful output when these differ
+            if s1 != s0:
+                raise RuntimeError("Oops!")
+
+        elif opts.command == "raw":
+            for d in dc:
+                if not opts.no_update_filecount:
+                    d["file_count"] = sum((s[1]-s[0])/d["dur"] for s in d["segmentlist"])
+                print d
+        elif opts.command == "prune":
+            for d in dc:
+                if not opts.no_update_filecount:
+                    d["file_count"] = sum((s[1]-s[0])/d["dur"] for s in d["segmentlist"])
+                if d["segmentlist"]:
+                    print d
+        else:
+            raise ProgrammingError("Unknown type")

@@ -50,12 +50,37 @@ class TestDiskcache(unittest.TestCase):
         self.file_l = [self._file_0x00ff, self._file_0x0101]
 
         self.dc_keys = ['directory', 'site', 'frame_type', 'ext',
-                        'frame_count', 'dur', 'mod_time',
+                        'number1', 'dur', 'mod_time',
                         'file_count', 'segmentlist']
 
     def tearDown(self):
         for f in self.file_l:
             f.close()
+
+    def testdc_min_gps(self):
+        min_gps = 867646288
+        dc = DiskCacheFile(self.fname_0x00ff, minimum_gps=867646288)
+        for d in dc:
+            for s in d["segmentlist"].shift(d["dur"]):
+                self.assertTrue(min_gps <= s[0])
+
+    def testdc_max_gps(self):
+        max_gps = 867646288
+        dc = DiskCacheFile(self.fname_0x00ff, maximum_gps=867646288)
+        for d in dc:
+            for s in d["segmentlist"]:
+                self.assertTrue( max_gps + d["dur"] >= s[1])
+
+
+    def testdc_min_max_gps(self):
+        min_gps = 867646288
+        max_gps = 867646288
+        dc = DiskCacheFile(self.fname_0x00ff, minimum_gps=867646288, maximum_gps=867646288)
+        for d in dc:
+            for s in d["segmentlist"]:
+                self.assertEquals(s[1] - s[0], d["dur"])
+            if d["segmentlist"]:
+                self.assertEquals(len(d["segmentlist"]), 1)
 
     def testdc_version_test_0x00ff(self):
         dc = DiskCacheFile(self.fname_0x00ff)
@@ -392,14 +417,14 @@ class TestDiskcache(unittest.TestCase):
         dc = DiskCacheFile(self.fname_0x00ff)
         self.assertEquals(
             set(['mod_time', 'segmentlist', 'frame_type', 'site', 
-                 'file_count', 'directory', 'dur', 'frame_count', 'ext']),
+                 'file_count', 'directory', 'dur', 'number1', 'ext']),
             set(dc.dict_keys()))
 
     def testkeys_0x0101(self):
         dc = DiskCacheFile(self.fname_0x0101)
         self.assertEquals(
             set(['mod_time', 'segmentlist', 'frame_type', 'site', 
-                 'file_count', 'directory', 'dur', 'frame_count', 'ext']),
+                 'file_count', 'directory', 'dur', 'number1', 'ext']),
             set(dc.dict_keys()))
 
     def testDiskCacheFile_refresh_fail_0x00ff(self):
