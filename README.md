@@ -61,6 +61,18 @@ True /archive/frames/trend/second-trend/LHO/H-T-999/H-T-999999960-60.gwf
 False /data/node238/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
 ```
 
+Concatenate results of two diskcaches (in this case, output is simply duplicated):
+```bash
+$ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO -m 1000000000 -M 1000000000
+$ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO -m 1000000000 -M 1000000000
+/archive/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
+/archive/frames/trend/second-trend/LHO/H-T-999/H-T-999999960-60.gwf
+/data/node238/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
+/archive/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
+/archive/frames/trend/second-trend/LHO/H-T-999/H-T-999999960-60.gwf
+/data/node238/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
+```
+
 Display in a compressed format (useful for debugging) (pass the command `-c raw`):
 ```bash
 $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO -m 1000000000 -M 1000000000 -c raw
