@@ -9,6 +9,39 @@ multiple-extension.
 Examples
 ========
 
+Help:
+```bash
+$ python -m diskcache --help
+Usage: diskcache.py FILE_LIST [options]
+
+Find data using diskcache
+
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -m GPS_MIN, --gps-min=GPS_MIN
+                        [default: None] Smallest second of interest.  Frames
+                        intersecting the open interval (GPS_MIN,GPS_MIN+1) are
+                        included.
+  -M GPS_MAX, --gps-max=GPS_MAX
+                        [default: None] Largest second of interest.  Frames
+                        intersecting the open interval (GPS_MAX,GPS_MAX+1) are
+                        included.
+  -r REGEXP, --regexp=REGEXP
+                        [default: ''] include only lines from files in
+                        FILE_LIST matching regular expression.
+  -c COMMAND, --command=COMMAND
+                        [default: expand] valid values are verify, expand,
+                        raw.
+  -e, --exists          Test existence of files in diskcache. Only sensible
+                        when used with '-c expand'.
+  --no-update-file-count
+                        If flag is present, then do not update the file_count
+                        field of the diskcache.
+  --no-prune            If flag is present, thenpreserve all all entries with
+                        empty segmentlists.
+```
+
 List all entries in diskcache matching `trend/LHO` and which
 contain the gps second `[1e10, 1e10 + 1]`:
 
