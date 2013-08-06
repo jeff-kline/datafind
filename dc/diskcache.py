@@ -49,7 +49,8 @@ class DiskCacheBase(list):
     '''
     
     def __init__(self, version, filter_list=[], extension=None,
-                 regexp='', minimum_gps=None, maximum_gps=None):
+                 regexp='', minimum_gps=None, maximum_gps=None, 
+                 prune=True, update_file_count=True):
 
         # extension and parse depend on the version. We assume
         # self._extension is set to something. Set self._parse
@@ -66,6 +67,11 @@ class DiskCacheBase(list):
             self._parse_ = self._parse_0x0101
         else:
             raise NotImplementedError("Unknown version %x" % hex(version))
+
+        # some details about modifying content of the diskcache
+        # iterator contents
+        self.prune = bool(prune)
+        self.update_file_count = bool(update_file_count)
 
         self.filter_list = filter_list
         self.regexp = compile(regexp)
@@ -110,8 +116,8 @@ class DiskCacheBase(list):
             gps_start = int(gps_start)
             return bool([
                 d for d in self if
-                d['ext'] == _ext and
                 d['directory'] == directory and
+                d['ext'] == _ext and
                 d['site'] == site and
                 d['frame_type'] == frame_type and
                 d['dur'] == dur and
@@ -279,7 +285,11 @@ class DiskCacheBase(list):
                     # this is needed when e_0 is larger than one
                     # segment, but smaller than the next segment
                     d['segmentlist'] &= segmentlist([segment(NegInfinity, e_0)])
-
+        if self.prune:
+            ret= [d for d in ret if d["segmentlist"]]
+        if self.update_file_count:
+            for d in ret:
+                  d["file_count"] = sum((s[1]-s[0])/d["dur"] for s in d["segmentlist"])
         return ret
 
     def refresh(self, *args, **kwargs):
@@ -377,7 +387,7 @@ class DiskCacheIter(DiskCacheBase):
 if __name__ == "__main__":
     from optparse import OptionParser
 
-    CMD_LIST=["verify", "expand", "raw", "prune"]
+    CMD_LIST=["verify", "expand", "raw"]
     
     usage = "usage: %prog FILE_LIST [options]"
     description = "Find data using diskcache"
@@ -412,16 +422,22 @@ if __name__ == "__main__":
                       "sensible when used with '-c expand' or '-c verify'.",
                       default=False, action="store_true")
 
-    parser.add_option("-n", "--no-update-filecount", help="do not update the file_count "
-                      "field of the diskcache. Only sensible when used with "
-                      "'-c raw' or '-c prune'.",
+    parser.add_option("--no-update-file-count", 
+                      help = "If flag is present, then do not update "
+                      "the file_count field of the diskcache.",
+                      default=False, action="store_true")
+
+    parser.add_option("--no-prune", help="If flag is present, then"
+                      "preserve all all entries with empty segmentlists.",
                       default=False, action="store_true")
 
     (opts, args) = parser.parse_args()
     
     for f in args:
         dc = DiskCacheFile(f, minimum_gps=opts.gps_min,
-                           maximum_gps=opts.gps_max, regexp=opts.regexp)
+                           maximum_gps=opts.gps_max, regexp=opts.regexp, 
+                           prune=bool(not opts.no_prune), 
+                           update_file_count=bool(not opts.no_update_file_count))
         if opts.command == "expand":
             for f in dc.expand():
                 if opts.stat: print exists(f), f
@@ -440,10 +456,9 @@ if __name__ == "__main__":
             # list all directories of interest
             s1=set()
             for d in dc:
-                if d["segmentlist"]:
-                    s1.update(set(join(d["directory"],l) 
-                                  for l in os.listdir(d["directory"]) 
-                                  if join(d["directory"], l) in dc))
+                s1.update(set(join(d["directory"],l) 
+                              for l in os.listdir(d["directory"]) 
+                              if join(d["directory"], l) in dc))
 
             # FIXME
             # offer useful output when these differ
@@ -451,15 +466,6 @@ if __name__ == "__main__":
                 raise RuntimeError("Oops!")
 
         elif opts.command == "raw":
-            for d in dc:
-                if not opts.no_update_filecount:
-                    d["file_count"] = sum((s[1]-s[0])/d["dur"] for s in d["segmentlist"])
-                print d
-        elif opts.command == "prune":
-            for d in dc:
-                if not opts.no_update_filecount:
-                    d["file_count"] = sum((s[1]-s[0])/d["dur"] for s in d["segmentlist"])
-                if d["segmentlist"]:
-                    print d
+            for d in dc: print d
         else:
             raise ProgrammingError("Unknown type")
