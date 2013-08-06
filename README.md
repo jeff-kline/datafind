@@ -60,7 +60,7 @@ True /archive/frames/trend/second-trend/LHO/H-T-999/H-T-999999960-60.gwf
 False /data/node238/frames/trend/minute-trend/LHO/H-M-99/H-M-999997200-3600.gwf
 ```
 
-Display the un-expanded diskcache information (useful for debugging):
+Display in a compressed format (useful for debugging):
 ```bash
 $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO -m 1000000000 -M 1000000000 -c raw
 {'mod_time': 1315971213, 'frame_type': 'M', 'ext': '.gwf', 'file_count': 1, 'number1': 1, 'directory': '/archive/frames/trend/minute-trend/LHO/H-M-99', 'segmentlist': [segment(999997200, 1000000800)], 'dur': 3600, 'site': 'H'}
