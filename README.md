@@ -43,7 +43,7 @@ Options:
 ```
 
 List all entries in diskcache matching `trend/LHO` and which
-contain the gps second `[1e10, 1e10 + 1]`:
+intersect the (open) gps time interval `(1e10, 1e10+1)`:
 
 ```bash
 $ python -m diskcache /ldas_outgoing/diskcacheAPI/frame_cache_dump -r trend/LHO -m 1000000000 -M 1000000000
