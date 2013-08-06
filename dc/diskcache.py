@@ -418,7 +418,8 @@ if __name__ == "__main__":
                       "values are %s." % ", ".join(CMD_LIST), 
                       default="expand", choices=CMD_LIST)
     
-    parser.add_option("-s", "--stat", help="Stat all files in diskcache. Only "
+    parser.add_option("-e", "--exists", help="Test existence of files in "
+                      "diskcache. Only "
                       "sensible when used with '-c expand'.",
                       default=False, action="store_true")
 
@@ -442,7 +443,7 @@ if __name__ == "__main__":
             for i, f in enumerate(dc.expand()):
                 if i > TOO_MANY_FILES:
                     raise RuntimeError("Too many files to expand")
-                if opts.stat: print exists(f), f
+                if opts.exists: print exists(f), f
                 else: print f
         elif opts.command == "verify":
             """
